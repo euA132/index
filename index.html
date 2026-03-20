@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Finance Master | André</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root { 
+            --bg: #0b0f1a; --card: #161b2c; --primary: #10b981; 
+            --text: #ffffff; --muted: #94a3b8; --danger: #f43f5e;
+        }
+        * { box-sizing: border-box; transition: 0.2s ease; }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--bg); color: var(--text); margin: 0; display: flex; justify-content: center; min-height: 100vh; }
+        
+        .container { width: 100%; max-width: 480px; padding: 20px; display: none; }
+        .card { background: var(--card); padding: 30px; border-radius: 24px; box-shadow: 0 20px 40px rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.05); }
+
+        /* Navegação */
+        .tabs { display: flex; gap: 10px; margin-bottom: 20px; background: rgba(0,0,0,0.2); padding: 5px; border-radius: 12px; }
+        .tab-btn { flex: 1; padding: 10px; border-radius: 8px; border: none; background: transparent; color: var(--muted); cursor: pointer; font-weight: 600; }
+        .tab-btn.active { background: var(--primary); color: #064e3b; }
+
+        /* Inputs e Botões */
+        input, select { width: 100%; padding: 14px; background: #0b0f1a; border: 1px solid #2d3748; border-radius: 12px; color: white; margin-bottom: 12px; font-size: 15px; }
+        input:focus { border-color: var(--primary); outline: none; box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2); }
+        .btn { width: 100%; padding: 15px; border-radius: 12px; border: none; font-weight: 700; cursor: pointer; background: var(--primary); color: #064e3b; font-size: 16px; }
+        .btn:hover { transform: translateY(-2px); opacity: 0.9; }
+
+        /* Lista de Gastos */
+        .gasto-row { display: flex; justify-content: space-between; align-items: center; padding: 15px; background: rgba(255,255,255,0.02); border-radius: 14px; margin-bottom: 10px; border: 1px solid rgba(255,255,255,0.03); }
+        .gasto-row b { display: block; font-size: 16px; }
+        .gasto-row span { font-size: 11px; color: var(--muted); text-transform: uppercase; }
+        .val-text { font-weight: 800; font-size: 17px; }
+
+        .total-banner { background: linear-gradient(135deg, #10b981, #059669); padding: 25px; border-radius: 20px; text-align: center; color: #064e3b; margin-top: 20px; }
+        .total-banner h1 { margin: 5px 0 0 0; font-size: 32px; }
+
+        #auth-screen { display: block; margin-top: 10vh; }
+    </style>
+</head>
+<body>
+
+    <div id="auth-screen" class="container">
+        <div class="card">
+            <h2 id="auth-title">Bem-vindo 🚀</h2>
+            <p id="auth-sub" style="color: var(--muted); text-align: center;">Introduz o teu nome para entrar</p>
+            <input type="text" id="user" placeholder="Nome de Utilizador">
+            <input type="password" id="pass" placeholder="Password">
+            <button class="btn" onclick="handleAuth()">Entrar / Registar</button>
+            <p style="font-size: 12px; text-align: center; color: var(--muted); margin-top: 15px;">O sistema deteta automaticamente se a conta já existe.</p>
+        </div>
+    </div>
+
+    <div id="app-screen" class="container">
+        <div class="tabs">
+            <button class="tab-btn active" id="tab-home" onclick="showTab('home')">💰 Gastos</button>
+            <button class="tab-btn" id="tab-account" onclick="showTab('account')">👤 Minha Conta</button>
+        </div>
+
+        <div id="view-home" class="card">
+            <h2>Novo Registo</h2>
+            <input type="text" id="desc" placeholder="Ex: Compras Lidl, Uber casa, Jantar...">
+            <div style="display: flex; gap: 10px;">
+                <input type="number" id="valor" placeholder="0.00€" style="flex: 1;">
+                <select id="cat" style="flex: 1;">
+                    <option value="Alimentação">🍎 Alimentação</option>
+                    <option value="Transporte">🚗 Transporte</option>
+                    <option value="Casa">🏠 Casa</option>
+                    <option value="Lazer">🍿 Lazer</option>
+                    <option value="Saúde">💊 Saúde</option>
+                    <option value="Outros">⚙️ Outros</option>
+                </select>
+            </div>
+            <button class="btn" onclick="addGasto()">+ Adicionar Gasto</button>
+
+            <div id="lista" style="margin-top: 25px; max-height: 250px; overflow-y: auto;"></div>
+
+            <div class="total-banner">
+                <small>VALOR TOTAL ACUMULADO</small>
+                <h1 id="total-text">0.00€</h1>
+            </div>
+        </div>
+
+        <div id="view-account" class="card" style="display: none;">
+            <h2>Definições de Conta</h2>
+            <p style="color: var(--muted);">Utilizador: <b id="user-display" style="color: white;"></b></p>
+            <hr style="border: 0; border-top: 1px solid #2d3748; margin: 20px 0;">
+            
+            <label style="font-size: 13px; color: var(--muted);">Nova Password</label>
+            <input type="password" id="new-pass" placeholder="Mínimo 6 caracteres">
+            <button class="btn" onclick="changePass()" style="background: #334155; color: white;">Atualizar Password</button>
+            
+            <button class="btn" onclick="logout()" style="margin-top: 50px; background: var(--danger); color: white;">Sair da Conta</button>
+        </div>
+    </div>
+
+<script>
+    const SUPABASE_URL = 'https://vuhtwixigulqypnukvld.supabase.co'; 
+    const SUPABASE_KEY = 'sb_publishable_-u3dW2EAEo00YITWpE_jOw_hNCPpANJ';
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    // --- AUTENTICAÇÃO ---
+    async function handleAuth() {
+        const u = document.getElementById('user').value.trim().toLowerCase();
+        const p = document.getElementById('pass').value;
+        if (!u || p.length < 6) return alert("Preenche tudo (Senha mín. 6 caracteres)");
+        
+        const email = `${u}@sistema.com`;
+        
+        // Tentar Login primeiro
+        const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password: p });
+        
+        if (error) {
+            // Se falhar porque não existe, tenta criar
+            if (confirm("Utilizador não encontrado. Desejas criar esta conta?")) {
+                const { error: regErr } = await supabaseClient.auth.signUp({ email, password: p });
+                if (regErr) alert(regErr.message);
+                else alert("Conta criada! Faz login agora.");
+            }
+        } else {
+            initApp();
+        }
+    }
+
+    async function initApp() {
+        const { data: { user } } = await supabaseClient.auth.getUser();
+        if (user) {
+            document.getElementById('auth-screen').style.display = 'none';
+            document.getElementById('app-screen').style.display = 'block';
+            document.getElementById('user-display').innerText = "@" + user.email.split('@')[0];
+            loadData();
+        }
+    }
+
+    // --- NAVEGAÇÃO ---
+    function showTab(tab) {
+        document.getElementById('view-home').style.display = tab === 'home' ? 'block' : 'none';
+        document.getElementById('view-account').style.display = tab === 'account' ? 'block' : 'none';
+        document.getElementById('tab-home').className = tab === 'home' ? 'tab-btn active' : 'tab-btn';
+        document.getElementById('tab-account').className = tab === 'account' ? 'tab-btn active' : 'tab-btn';
+    }
+
+    // --- GESTÃO DE GASTOS ---
+    async function loadData() {
+        const { data } = await supabaseClient.from('gastos').select('*').order('created_at', { ascending: false });
+        const lista = document.getElementById('lista');
+        let total = 0; lista.innerHTML = '';
+
+        data?.forEach(g => {
+            total += parseFloat(g.valor);
+            lista.innerHTML += `
+                <div class="gasto-row">
+                    <div><b>${g.descricao}</b><span>${g.categoria}</span></div>
+                    <div class="val-text">${parseFloat(g.valor).toFixed(2)}€</div>
+                </div>`;
+        });
+        document.getElementById('total-text').innerText = total.toFixed(2) + "€";
+    }
+
+    async function addGasto() {
+        const d = document.getElementById('desc').value;
+        const v = document.getElementById('valor').value;
+        const c = document.getElementById('cat').value;
+        if (!d || !v) return alert("Preenche a descrição e o valor!");
+        
+        await supabaseClient.from('gastos').insert([{ descricao: d, valor: v, categoria: c }]);
+        document.getElementById('desc').value = ''; document.getElementById('valor').value = '';
+        loadData();
+    }
+
+    // --- MUDAR PASSWORD ---
+    async function changePass() {
+        const newP = document.getElementById('new-pass').value;
+        if (newP.length < 6) return alert("Senha deve ter 6+ caracteres");
+        
+        const { error } = await supabaseClient.auth.updateUser({ password: newP });
+        if (error) alert("Erro: " + error.message);
+        else { alert("Password alterada com sucesso!"); document.getElementById('new-pass').value = ''; }
+    }
+
+    function logout() { supabaseClient.auth.signOut(); location.reload(); }
+
+    // Verificar se já está logado
+    supabaseClient.auth.getUser().then(({data}) => { if(data.user) initApp(); });
+
+</script>
+</body>
+</html>
