@@ -3,114 +3,109 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Finance Pro | Gestão de Gastos</title>
+    <title>Finance App | André</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
     <style>
         :root { 
             --bg: #0b0f1a; --card: #161b2c; --primary: #10b981; 
-            --text: #ffffff; --muted: #94a3b8; --danger: #f43f5e; --accent: #334155;
+            --text: #ffffff; --muted: #94a3b8; --danger: #f43f5e;
         }
-        * { box-sizing: border-box; transition: 0.2s ease; }
-        body { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--bg); color: var(--text); margin: 0; display: flex; justify-content: center; min-height: 100vh; }
+        * { box-sizing: border-box; transition: 0.2s ease; margin: 0; padding: 0; }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--bg); color: var(--text); display: flex; justify-content: center; min-height: 100vh; padding: 20px; }
         
-        .container { width: 100%; max-width: 480px; padding: 20px; display: none; }
-        .card { background: var(--card); padding: 30px; border-radius: 24px; box-shadow: 0 20px 40px rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.05); }
+        .container { width: 100%; max-width: 420px; display: none; margin-top: 30px; animation: fadeIn 0.3s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* Navegação Superior */
-        .tabs { display: flex; gap: 10px; margin-bottom: 20px; background: rgba(0,0,0,0.2); padding: 5px; border-radius: 12px; }
-        .tab-btn { flex: 1; padding: 12px; border-radius: 10px; border: none; background: transparent; color: var(--muted); cursor: pointer; font-weight: 700; font-size: 14px; }
-        .tab-btn.active { background: var(--primary); color: #064e3b; }
+        .card { background: var(--card); padding: 25px; border-radius: 24px; box-shadow: 0 15px 35px rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.05); }
 
-        /* Formulários */
-        .input-group { margin-bottom: 15px; }
-        .label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 6px; font-weight: 600; }
+        /* Menu de Login/Registo */
+        .auth-nav { display: flex; gap: 8px; margin-bottom: 20px; background: rgba(0,0,0,0.3); padding: 5px; border-radius: 14px; }
+        .nav-btn { flex: 1; padding: 12px; border: none; border-radius: 10px; background: transparent; color: var(--muted); cursor: pointer; font-weight: 700; font-size: 13px; text-transform: uppercase; }
+        .nav-btn.active { background: var(--primary); color: #064e3b; }
+
+        /* Inputs */
+        .field { margin-bottom: 15px; }
+        label { display: block; font-size: 11px; color: var(--muted); margin-bottom: 6px; margin-left: 5px; font-weight: 700; text-transform: uppercase; }
         input, select { width: 100%; padding: 14px; background: #0b0f1a; border: 1px solid #2d3748; border-radius: 12px; color: white; font-size: 15px; }
-        input:focus { border-color: var(--primary); outline: none; box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1); }
+        input:focus { border-color: var(--primary); outline: none; }
         
         .btn { width: 100%; padding: 16px; border-radius: 12px; border: none; font-weight: 800; cursor: pointer; background: var(--primary); color: #064e3b; font-size: 16px; margin-top: 10px; }
-        .btn:hover { transform: translateY(-2px); filter: brightness(1.1); }
-        .btn-outline { background: transparent; border: 1px solid var(--accent); color: white; margin-top: 15px; font-size: 14px; }
+        .btn:active { transform: scale(0.97); }
 
-        /* Lista de Gastos Estilizada */
-        .gasto-item { display: flex; justify-content: space-between; align-items: center; padding: 16px; background: rgba(255,255,255,0.02); border-radius: 16px; margin-bottom: 12px; border: 1px solid rgba(255,255,255,0.03); }
-        .gasto-item b { display: block; font-size: 15px; color: white; }
-        .gasto-item span { font-size: 11px; color: var(--muted); text-transform: uppercase; font-weight: 700; }
-        .val-text { font-weight: 800; font-size: 18px; color: var(--primary); }
+        /* Gastos */
+        .gasto-item { display: flex; justify-content: space-between; align-items: center; padding: 15px; background: rgba(255,255,255,0.02); border-radius: 16px; margin-bottom: 12px; border: 1px solid rgba(255,255,255,0.03); }
+        .gasto-item b { font-size: 15px; display: block; color: white; }
+        .gasto-item small { color: var(--muted); font-size: 11px; text-transform: uppercase; }
+        
+        .val-pill { display: flex; align-items: center; gap: 10px; }
+        .val-pill span { font-weight: 800; color: var(--primary); font-size: 16px; }
+        .del-x { color: var(--danger); cursor: pointer; padding: 5px 10px; font-weight: 900; background: rgba(244, 63, 94, 0.1); border-radius: 8px; font-size: 12px; }
 
-        .total-card { background: linear-gradient(135deg, #10b981, #059669); padding: 25px; border-radius: 20px; text-align: center; color: #064e3b; margin-top: 25px; }
-        .total-card h2 { margin: 5px 0 0 0; font-size: 34px; font-weight: 800; }
-
-        #auth-screen { display: block; align-self: center; }
+        .total-box { background: linear-gradient(135deg, #10b981, #059669); padding: 25px; border-radius: 20px; text-align: center; color: #064e3b; margin-top: 25px; }
     </style>
 </head>
 <body>
 
-    <div id="auth-screen" class="container">
-        <div class="card" id="auth-card">
-            <h2 id="auth-title" style="margin-bottom: 5px;">Finance Pro 🚀</h2>
-            <p id="auth-subtitle" style="text-align: center; color: var(--muted); font-size: 14px; margin-bottom: 30px;">Introduz o teu e-mail para continuar</p>
+    <div id="auth-section" class="container" style="display: block;">
+        <div class="auth-nav">
+            <button id="btn-login" class="nav-btn active" onclick="setAuthMode('login')">Entrar</button>
+            <button id="btn-signup" class="nav-btn" onclick="setAuthMode('signup')">Criar Conta</button>
+        </div>
+        
+        <div class="card">
+            <h2 id="auth-title" style="margin-bottom: 20px; text-align: center;">Olá! 👋</h2>
             
-            <div class="input-group">
-                <span class="label">E-mail Verdadeiro</span>
-                <input type="email" id="email" placeholder="exemplo@gmail.com">
+            <div class="field">
+                <label>Nome de Utilizador</label>
+                <input type="text" id="user-input" placeholder="Ex: andre7">
             </div>
             
-            <div class="input-group">
-                <span class="label">Palavra-passe</span>
-                <input type="password" id="pass" placeholder="Mínimo 6 caracteres">
+            <div class="field">
+                <label>Password</label>
+                <input type="password" id="pass-input" placeholder="Mínimo 6 caracteres">
             </div>
 
-            <button class="btn" id="main-auth-btn" onclick="handleAuth()">Entrar na Conta</button>
-            <button class="btn btn-outline" id="switch-auth-btn" onclick="toggleAuthMode()">Não tens conta? Regista-te</button>
+            <button class="btn" id="action-btn" onclick="executarAcao()">Aceder ao Sistema</button>
         </div>
     </div>
 
-    <div id="app-screen" class="container">
-        <div class="tabs">
-            <button class="tab-btn active" id="btn-home" onclick="showTab('home')">📊 Dashboard</button>
-            <button class="tab-btn" id="btn-profile" onclick="showTab('profile')">⚙️ Conta</button>
-        </div>
+    <div id="app-section" class="container">
+        <div class="card">
+            <div style="display:flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
+                <h3 style="color: var(--primary);">@<span id="nome-label"></span></h3>
+                <span onclick="fazerLogout()" style="font-size: 12px; color: var(--danger); cursor: pointer; font-weight: 800;">SAIR</span>
+            </div>
 
-        <div id="view-home">
-            <div class="card">
-                <h2 style="font-size: 20px; text-align: left; margin-bottom: 20px;">Novo Gasto</h2>
-                <input type="text" id="desc" placeholder="O que compraste?">
-                <div style="display: flex; gap: 10px;">
-                    <input type="number" id="valor" placeholder="0.00€" style="flex: 1.2;">
-                    <select id="cat" style="flex: 1;">
+            <div class="field">
+                <label>O que comprou?</label>
+                <input type="text" id="g-desc" placeholder="Ex: Supermercado, Aluguer, Cinema...">
+            </div>
+
+            <div style="display: flex; gap: 10px;">
+                <div class="field" style="flex: 1;">
+                    <label>Valor (€)</label>
+                    <input type="number" id="g-valor" placeholder="0.00">
+                </div>
+                <div class="field" style="flex: 1;">
+                    <label>Categoria</label>
+                    <select id="g-cat">
                         <option value="Alimentação">🍎 Comida</option>
                         <option value="Transporte">🚗 Transporte</option>
                         <option value="Lazer">🍿 Lazer</option>
                         <option value="Casa">🏠 Casa</option>
-                        <option value="Saúde">💊 Saúde</option>
                         <option value="Outros">⚙️ Outros</option>
                     </select>
                 </div>
-                <button class="btn" onclick="addGasto()">+ Adicionar</button>
             </div>
+            
+            <button class="btn" onclick="registarGasto()">+ Guardar Gasto</button>
 
-            <div id="lista" style="margin-top: 25px; max-height: 280px; overflow-y: auto; padding-right: 5px;"></div>
+            <div id="lista-corpo" style="margin-top: 25px; max-height: 250px; overflow-y: auto;"></div>
 
-            <div class="total-card">
-                <small style="font-weight: 700; opacity: 0.8;">BALANÇO TOTAL</small>
-                <h2 id="total-text">0.00€</h2>
-            </div>
-        </div>
-
-        <div id="view-profile" style="display: none;">
-            <div class="card">
-                <h2>Definições</h2>
-                <p style="color: var(--muted); font-size: 14px;">Sessão iniciada como:<br><b id="user-display" style="color: white;"></b></p>
-                <hr style="border: 0; border-top: 1px solid var(--accent); margin: 25px 0;">
-                
-                <div class="input-group">
-                    <span class="label">Mudar Palavra-passe</span>
-                    <input type="password" id="new-pass" placeholder="Nova password">
-                </div>
-                <button class="btn" onclick="updatePassword()" style="background: var(--accent); color: white;">Atualizar Senha</button>
-                
-                <button class="btn" onclick="logout()" style="margin-top: 40px; background: var(--danger); color: white;">Terminar Sessão</button>
+            <div class="total-box">
+                <p style="font-size: 11px; font-weight: 800; opacity: 0.8; margin-bottom: 5px;">TOTAL GASTO</p>
+                <h1 id="total-val" style="font-size: 34px; font-weight: 800;">0.00€</h1>
             </div>
         </div>
     </div>
@@ -120,94 +115,89 @@
     const SUPABASE_KEY = 'sb_publishable_-u3dW2EAEo00YITWpE_jOw_hNCPpANJ';
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    let isLoginMode = true;
+    let mode = 'login';
 
-    // --- TROCAR ENTRE LOGIN E REGISTO ---
-    function toggleAuthMode() {
-        isLoginMode = !isLoginMode;
-        document.getElementById('auth-title').innerText = isLoginMode ? "Bem-vindo de volta! 🚀" : "Criar Conta ✨";
-        document.getElementById('main-auth-btn').innerText = isLoginMode ? "Entrar na Conta" : "Finalizar Registo";
-        document.getElementById('switch-auth-btn').innerText = isLoginMode ? "Não tens conta? Regista-te" : "Já tens conta? Faz login";
+    function setAuthMode(m) {
+        mode = m;
+        document.getElementById('btn-login').className = m === 'login' ? 'nav-btn active' : 'nav-btn';
+        document.getElementById('btn-signup').className = m === 'signup' ? 'nav-btn active' : 'nav-btn';
+        document.getElementById('auth-title').innerText = m === 'login' ? 'Olá de novo! 👋' : 'Novo por aqui? ✨';
+        document.getElementById('action-btn').innerText = m === 'login' ? 'Aceder ao Sistema' : 'Finalizar Registo';
     }
 
-    // --- AUTENTICAÇÃO REAL ---
-    async function handleAuth() {
-        const email = document.getElementById('email').value.trim();
-        const pass = document.getElementById('pass').value;
+    async function executarAcao() {
+        const u = document.getElementById('user-input').value.trim().toLowerCase();
+        const p = document.getElementById('pass-input').value;
+        if (!u || p.length < 6) return alert("Insere o nome e uma password (mín. 6 chars)");
+        
+        const pseudoEmail = `${u}@sistema.local`;
 
-        if (!email || pass.length < 6) return alert("Insere um e-mail válido e senha (mín. 6 chars)");
-
-        if (isLoginMode) {
-            const { error } = await supabaseClient.auth.signInWithPassword({ email, password: pass });
-            if (error) alert("Erro: " + error.message); else checkUser();
+        if (mode === 'signup') {
+            const { error } = await supabaseClient.auth.signUp({ email: pseudoEmail, password: p });
+            if (error) alert("Erro: " + error.message);
+            else { alert("Conta criada! Já podes entrar."); setAuthMode('login'); }
         } else {
-            const { error } = await supabaseClient.auth.signUp({ email, password: pass });
-            if (error) alert("Erro no registo: " + error.message); 
-            else alert("Conta criada! Já podes entrar.");
+            const { error } = await supabaseClient.auth.signInWithPassword({ email: pseudoEmail, password: p });
+            if (error) alert("Utilizador ou password incorretos!");
+            else checkSession();
         }
     }
 
-    async function checkUser() {
+    async function checkSession() {
         const { data: { user } } = await supabaseClient.auth.getUser();
         if (user) {
-            document.getElementById('auth-screen').style.display = 'none';
-            document.getElementById('app-screen').style.display = 'block';
-            document.getElementById('user-display').innerText = user.email;
-            loadGastos();
+            document.getElementById('auth-section').style.display = 'none';
+            document.getElementById('app-section').style.display = 'block';
+            document.getElementById('nome-label').innerText = user.email.split('@')[0];
+            renderList();
         }
     }
 
-    // --- NAVEGAÇÃO ---
-    function showTab(tab) {
-        document.getElementById('view-home').style.display = tab === 'home' ? 'block' : 'none';
-        document.getElementById('view-profile').style.display = tab === 'profile' ? 'block' : 'none';
-        document.getElementById('btn-home').className = tab === 'home' ? 'tab-btn active' : 'tab-btn';
-        document.getElementById('btn-profile').className = tab === 'profile' ? 'tab-btn active' : 'tab-btn';
+    async function renderList() {
+        const { data } = await supabaseClient.from('gastos').select('*').order('created_at', { ascending: false });
+        const listContainer = document.getElementById('lista-corpo');
+        let sum = 0; listContainer.innerHTML = '';
+        
+        data?.forEach(g => {
+            sum += parseFloat(g.valor);
+            listContainer.innerHTML += `
+                <div class="gasto-item">
+                    <div><b>${g.descricao}</b><small>${g.categoria}</small></div>
+                    <div class="val-pill">
+                        <span>${parseFloat(g.valor).toFixed(2)}€</span>
+                        <div class="del-x" onclick="deletar('${g.id}')">✕</div>
+                    </div>
+                </div>`;
+        });
+        document.getElementById('total-val').innerText = sum.toFixed(2) + "€";
     }
 
-    // --- GESTÃO DE DADOS ---
-    async function loadGastos() {
-        const { data, error } = await supabaseClient.from('gastos').select('*').order('created_at', { ascending: false });
-        const lista = document.getElementById('lista');
-        let total = 0; lista.innerHTML = '';
-
-        if (data) {
-            data.forEach(g => {
-                total += parseFloat(g.valor);
-                lista.innerHTML += `
-                    <div class="gasto-item">
-                        <div><b>${g.descricao}</b><span>${g.categoria}</span></div>
-                        <div class="val-text">${parseFloat(g.valor).toFixed(2)}€</div>
-                    </div>`;
-            });
-        }
-        document.getElementById('total-text').innerText = total.toFixed(2) + "€";
+    async function registarGasto() {
+        const d = document.getElementById('g-desc').value;
+        const v = document.getElementById('g-valor').value;
+        const c = document.getElementById('g-cat').value;
+        if (!d || !v) return alert("O que comprou e quanto custou?");
+        
+        await supabaseClient.from('gastos').insert([{ descricao: d, valor: v, categoria: c }]);
+        document.getElementById('g-desc').value = ''; 
+        document.getElementById('g-valor').value = '';
+        renderList();
     }
 
-    async function addGasto() {
-        const d = document.getElementById('desc').value;
-        const v = document.getElementById('valor').value;
-        const c = document.getElementById('cat').value;
-        if (!d || !v) return;
-
-        const { error } = await supabaseClient.from('gastos').insert([{ descricao: d, valor: v, categoria: c }]);
-        if (!error) {
-            document.getElementById('desc').value = '';
-            document.getElementById('valor').value = '';
-            loadGastos();
+    async function deletar(id) {
+        if (confirm("Apagar registo?")) {
+            await supabaseClient.from('gastos').delete().eq('id', id);
+            renderList();
         }
     }
 
-    async function updatePassword() {
-        const newP = document.getElementById('new-pass').value;
-        if (newP.length < 6) return alert("Mínimo 6 caracteres!");
-        const { error } = await supabaseClient.auth.updateUser({ password: newP });
-        if (error) alert(error.message); else alert("Password atualizada!");
+    async function fazerLogout() {
+        await supabaseClient.auth.signOut();
+        window.localStorage.clear();
+        location.reload();
     }
 
-    async function logout() { await supabaseClient.auth.signOut(); location.reload(); }
-
-    checkUser();
+    checkSession();
 </script>
 </body>
 </html>
